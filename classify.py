@@ -21,7 +21,10 @@ def read_santander_file(filename):
 		if line.strip() == '':
 			continue
 
-		category, data = line.split(":")
+		splitted = line.split(":")
+
+		category = splitted[0]
+		data = ":".join(splitted[1:])
 
 		if category == 'Date':
 			dates.append(data.strip())
