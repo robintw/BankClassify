@@ -1,18 +1,30 @@
+import re
+import dateutil
+import os
+
 import pandas as pd
 import numpy as np
 from textblob.classifiers import NaiveBayesClassifier
-import re
 from colorama import init, Fore, Style
-import dateutil
 from tabulate import tabulate
 
 class BankClassify():
 
     def __init__(self, data="AllData.csv"):
-        self.prev_data = pd.read_csv(data)
+        """Load in the previous data (by default from AllData.csv) and initialise the classifier"""
+        if os.path.exists(data):
+            self.prev_data = pd.read_csv(data)
+        else:
+            self.prev_data = pd.DataFrame(columns=['date', 'desc', 'amount', 'cat'])
+
         self.classifier = NaiveBayesClassifier(self._get_training(self.prev_data), self._extractor)
 
     def add_data(self, filename):
+        """Add new data and interactively classify it.
+
+        Arguments:
+         - filename: filename of Santander-format file
+        """
         self.new_data = self._read_santander_file(filename)
 
         self._ask_with_guess(self.new_data)
@@ -21,6 +33,7 @@ class BankClassify():
         self.prev_data.to_csv("AllData.csv", index=False)
 
     def _prep_for_analysis(self):
+        """Prepare data for analysis in pandas, setting index types and subsetting"""
         self.prev_data = self._make_date_index(self.prev_data)
 
         self.prev_data['cat'] = self.prev_data['cat'].str.strip()
@@ -36,6 +49,7 @@ class BankClassify():
         self.out_noexpignore = self.out[(self.out.cat != 'Ignore') & (self.out.cat != 'Expenses')]
 
     def _read_categories(self):
+        """Read list of categories from categories.txt"""
         categories = {}
 
         with open('categories.txt') as f:
@@ -45,10 +59,13 @@ class BankClassify():
         return categories
 
     def _add_new_category(self, category):
+        """Add a new category to categories.txt"""
         with open('categories.txt', 'a') as f:
             f.write('\n' + category)
 
     def _ask_with_guess(self, df):
+        """Interactively guess categories for each transaction in df, asking each time if the guess
+        is correct"""
         # Initialise colorama
         init()
 
@@ -110,11 +127,13 @@ class BankClassify():
         return df
 
     def _make_date_index(self, df):
+        """Make the index of df a Datetime index"""
         df.index = pd.DatetimeIndex(df.date.apply(dateutil.parser.parse,dayfirst=True))
 
         return df
 
     def _read_santander_file(self, filename):
+        """Read a file in the plain text format that Santander provides downloads in"""
         with open(filename, errors='replace') as f:
             lines = f.readlines()
 
@@ -150,6 +169,8 @@ class BankClassify():
         return df
 
     def _get_training(self, df):
+        """Get training data for the classifier, consisting of tuples of
+        (text, category)"""
         train = []
         subset = df[df['cat'] != '']
         for i in subset.index:
@@ -160,6 +181,7 @@ class BankClassify():
         return train
 
     def _extractor(self, doc):
+        """Extract tokens from a given string"""
         # TODO: Extend to extract words within words
         # For example, MUSICROOM should give MUSIC and ROOM
         tokens = self._split_by_multiple_delims(doc, [' ', '/'])
@@ -174,9 +196,11 @@ class BankClassify():
         return features
 
     def _strip_numbers(self, s):
+        """Strip numbers from the given string"""
         return re.sub("[^A-Z ]", "", s)
 
     def _split_by_multiple_delims(self, string, delims):
+        """Split the given string by the list of delimiters given"""
         regexp = "|".join(delims)
 
         return re.split(regexp, string)
