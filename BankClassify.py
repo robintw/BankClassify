@@ -1,18 +1,19 @@
 import pandas as pd
-from text.classifiers import NaiveBayesClassifier
+import numpy as np
+from textblob.classifiers import NaiveBayesClassifier
 import re
 from colorama import init, Fore, Style
 import dateutil
+from tabulate import tabulate
 
 class BankClassify():
 
-    def __init__(self, data="AllData.csv", incomedata="AllIncome.csv"):
+    def __init__(self, data="AllData.csv"):
         self.prev_data = pd.read_csv(data)
         self.classifier = NaiveBayesClassifier(self._get_training(self.prev_data), self._extractor)
 
-
     def add_data(self, filename):
-        self.new_data, self.new_income = self._read_santander_file(filename)
+        self.new_data = self._read_santander_file(filename)
 
         self._ask_with_guess(self.new_data)
 
@@ -22,85 +23,89 @@ class BankClassify():
     def _prep_for_analysis(self):
         self.prev_data = self._make_date_index(self.prev_data)
 
-        self.noignore = self.prev_data[self.prev_data.cat != 'Ignore']
-        self.noexpignore = self.prev_data[(self.prev_data.cat != 'Ignore') & (self.prev_data.cat != 'Expenses')]
+        self.prev_data['cat'] = self.prev_data['cat'].str.strip()
 
+        self.inc = self.prev_data[self.prev_data.amount > 0]
+        self.out = self.prev_data[self.prev_data.amount < 0]
+        self.out.amount = self.out.amount.abs()
+
+        self.inc_noignore = self.inc[self.inc.cat != 'Ignore']
+        self.inc_noexpignore = self.inc[(self.inc.cat != 'Ignore') & (self.inc.cat != 'Expenses')]
+
+        self.out_noignore = self.out[self.out.cat != 'Ignore']
+        self.out_noexpignore = self.out[(self.out.cat != 'Ignore') & (self.out.cat != 'Expenses')]
+
+    def _read_categories(self):
+        categories = {}
+
+        with open('categories.txt') as f:
+            for i, line in enumerate(f.readlines()):
+                categories[i] = line.strip()
+
+        return categories
+
+    def _add_new_category(self, category):
+        with open('categories.txt', 'a') as f:
+            f.write('\n' + category)
 
     def _ask_with_guess(self, df):
+        # Initialise colorama
         init()
 
         df['cat'] = ""
 
-        categories = {1: 'Bill',
-                      2: 'Supermarket',
-                      3: 'Cash',
-                      4: 'Petrol',
-                      5: 'Eating Out',
-                      6: 'Travel',
-                      7: 'Unclassified',
-                      8: 'House',
-                      9: 'Books',
-                      10: 'Craft',
-                      11: 'Charity Shop',         
-                      12: 'Presents',
-                      13: 'Toiletries',
-                      14: 'Car',
-                      15: 'Cheque',
-                      16: 'Rent',
-                      17: 'Paypal',
-                      18: 'Ignore',
-                      19: 'Expenses'
-                      }
+        categories = self._read_categories()
 
         for index, row in df.iterrows():
-            #print Fore.GREEN + "-" * 72 + Fore.RESET
 
-            
-
-            # TODO: Make interface nicer
-            # Ideas:
-            # * Give list of categories at the end
-            cats_list = ["%d: %s" % (id, cat) for id,cat in categories.iteritems()]
-            new_list = []
-            for item in cats_list:
-                if len(item.split(":")[1].strip()) < 5:
-                    new_list.append(item + "\t\t\t")
-                else:
-                    new_list.append(item + "\t\t")
-            new_list[2::3] = map(lambda x: x+"\n", new_list[2::3])
-            cats_joined = "".join(new_list)
+            # Generate the category numbers table from the list of categories
+            cats_list = [[idnum, cat] for idnum, cat in categories.items()]
+            cats_table = tabulate(cats_list)
 
             stripped_text = self._strip_numbers(row['desc'])
 
+            # Guess a category using the classifier (only if there is data in the classifier)
             if len(self.classifier.train_set) > 1:
                 guess = self.classifier.classify(stripped_text)
             else:
                 guess = ""
 
 
-            # PRINTING STUFF
-            print chr(27) + "[2J"
-            print cats_joined
-            print "\n\n"
-            print "On: %s\t %.2f\n%s" % (row['date'], row['amount'], row['desc'])
-            print Fore.RED  + Style.BRIGHT + "My guess is: " + guess + Fore.RESET
+            # Print list of categories
+            print(chr(27) + "[2J")
+            print(cats_table)
+            print("\n\n")
+            # Print transaction
+            print("On: %s\t %.2f\n%s" % (row['date'], row['amount'], row['desc']))
+            print(Fore.RED  + Style.BRIGHT + "My guess is: " + str(guess) + Fore.RESET)
 
-            res = raw_input("> ")
+            input_value = input("> ")
 
-            if res.lower().startswith('q'):
-                # Q = Quit
+            if input_value.lower() == 'q':
+                # If the input was 'q' then quit
                 return df
-            if res == "":
-                # Our guess was right!
+            if input_value == "":
+                # If the input was blank then our guess was right!
                 df.ix[index, 'cat'] = guess
                 self.classifier.update([(stripped_text, guess)])
             else:
-                # Our guess was wrong
+                # Otherwise, our guess was wrong
+                try:
+                    # Try converting the input to an integer category number
+                    # If it works then we've entered a category
+                    category_number = int(input_value)
+                    category = categories[category_number]
+                except ValueError:
+                    # Otherwise, we've entered a new category, so add it to the list of
+                    # categories
+                    category = input_value
+                    self._add_new_category(category)
+                    categories = self._read_categories()
 
                 # Write correct answer
-                df.ix[index, 'cat'] = categories[int(res)]
+                df.ix[index, 'cat'] = category
                 # Update classifier
-                self.classifier.update([(stripped_text, categories[int(res)])])
+                self.classifier.update([(stripped_text, category)   ])
 
         return df
 
@@ -110,7 +115,7 @@ class BankClassify():
         return df
 
     def _read_santander_file(self, filename):
-        with open(filename) as f:
+        with open(filename, errors='replace') as f:
             lines = f.readlines()
 
         dates = []
@@ -118,7 +123,6 @@ class BankClassify():
         amounts = []
 
         for line in lines[4:]:
-            #print line
 
             line = "".join(i for i in line if ord(i)<128)
             if line.strip() == '':
@@ -143,11 +147,7 @@ class BankClassify():
         df['desc'] = df.desc.astype(str)
         df['date'] = df.date.astype(str)
 
-        outgoings = df[df.amount < 0]
-        income = df[df.amount > 0]
-
-        outgoings['amount'] = -1 * df['amount']
-        return outgoings, income
+        return df
 
     def _get_training(self, df):
         train = []
@@ -157,8 +157,6 @@ class BankClassify():
             new_desc = self._strip_numbers(row['desc'])
             train.append( (new_desc, row['cat']) )
 
-        # classifier = NaiveBayesClassifier(train)
-        # return classifier
         return train
 
     def _extractor(self, doc):
