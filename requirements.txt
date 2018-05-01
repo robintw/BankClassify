@@ -1,0 +1,4 @@
+pandas
+textblob
+colorama
+tabulate
