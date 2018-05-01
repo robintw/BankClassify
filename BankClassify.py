@@ -3,7 +3,6 @@ import dateutil
 import os
 
 import pandas as pd
-import numpy as np
 from textblob.classifiers import NaiveBayesClassifier
 from colorama import init, Fore, Style
 from tabulate import tabulate
@@ -133,7 +132,9 @@ class BankClassify():
         return df
 
     def _read_santander_file(self, filename):
-        """Read a file in the plain text format that Santander provides downloads in"""
+        """Read a file in the plain text format that Santander provides downloads in.
+
+        Returns a pd.DataFrame with columns of 'date', 'desc' and 'amount'."""
         with open(filename, errors='replace') as f:
             lines = f.readlines()
 
