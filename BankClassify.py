@@ -102,7 +102,7 @@ class BankClassify():
                 return df
             if input_value == "":
                 # If the input was blank then our guess was right!
-                df.iloc[index]['cat'] = guess
+                df.at[index, 'cat'] = guess
                 self.classifier.update([(stripped_text, guess)])
             else:
                 # Otherwise, our guess was wrong
@@ -119,7 +119,7 @@ class BankClassify():
                     categories = self._read_categories()
 
                 # Write correct answer
-                df.iloc[index]['cat'] = category
+                df.at[index, 'cat'] = category
                 # Update classifier
                 self.classifier.update([(stripped_text, category)   ])
 
