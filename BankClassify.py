@@ -1,6 +1,7 @@
 import re
 import dateutil
 import os
+from datetime import datetime
 
 import pandas as pd
 from textblob.classifiers import NaiveBayesClassifier
@@ -18,13 +19,18 @@ class BankClassify():
 
         self.classifier = NaiveBayesClassifier(self._get_training(self.prev_data), self._extractor)
 
-    def add_data(self, filename):
+    def add_data(self, filename, bank="santander"):
         """Add new data and interactively classify it.
 
         Arguments:
          - filename: filename of Santander-format file
         """
-        self.new_data = self._read_santander_file(filename)
+        if bank == "santander":
+            print("adding santander data!")
+            self.new_data = self._read_santander_file(filename)
+        elif bank == "nationwide":
+            print("adding nationwide data!")
+            self.new_data = self._read_nationwide_file(filename)
 
         self._ask_with_guess(self.new_data)
 
@@ -128,6 +134,57 @@ class BankClassify():
     def _make_date_index(self, df):
         """Make the index of df a Datetime index"""
         df.index = pd.DatetimeIndex(df.date.apply(dateutil.parser.parse,dayfirst=True))
+
+        return df
+
+    def _read_nationwide_file(self, filename):
+        """Read a file in the csv file that Nationwide provides downloads in.
+
+        Returns a pd.DataFrame with columns of 'date', 'desc' and 'amount'."""
+
+        with open(filename) as f:
+           lines = f.readlines()
+
+
+        dates = []
+        descs = []
+        amounts = []
+
+        for line in lines[5:]:
+
+            line = "".join(i for i in line if ord(i)<128)
+            if line.strip() == '':
+                continue
+
+            splits = line.split("\",\"")
+            """
+            0 = Date
+            1 = Transaction type
+            2 = Description
+            3 = Paid Out
+            4 = Paid In
+            5 = Balance
+            """
+            date = splits[0].replace("\"", "").strip()
+            date = datetime.strptime(date, '%d %b %Y').strftime('%d/%m/%Y')
+            dates.append(date)
+
+            # get spend/pay in amount
+            if splits[3] != "": # paid out
+                spend = float(re.sub("[^0-9\.-]", "", splits[3])) * -1
+            else: # paid in
+                spend = float(re.sub("[^0-9\.-]", "", splits[4]))
+            
+            amounts.append(spend)
+
+            #Description
+            descs.append(splits[2])
+
+        df = pd.DataFrame({'date':dates, 'desc':descs, 'amount':amounts})
+
+        df['amount'] = df.amount.astype(float)
+        df['desc'] = df.desc.astype(str)
+        df['date'] = df.date.astype(str)
 
         return df
 
