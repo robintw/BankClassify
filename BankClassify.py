@@ -255,7 +255,7 @@ class BankClassify():
         # lloyds outputs 2 cols, credit and debit, we want 1 col representing a +- figure
         for index, row in df.iterrows():
             if (row['amount'] > 0):
-                print('send it negative')
+                # it's a negative amount because this is a spend
                 df.at[index, 'amount'] = -row['amount']
             elif (row['creditAmount'] > 0):
                 df.at[index, 'amount'] = row['creditAmount']
