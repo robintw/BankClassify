@@ -20,3 +20,5 @@ To use it with your own data:
 - *If you use Santander UK as your bank:* just run `bc.add_data(filename)` with the filename of your downloaded statement file. Delete `AllData.py` first though, or the example data will be used as part of the training data.
 - *If you use another bank:* Write your own function to read in your statement data from your bank. It must return a pandas dataframe with columns of `date`, `desc` and `amount`. Add this to the `BankClassify` class and call it instead of `_read_santander_file`.
 
+### Known issues
+For Barclays bank sometimes the CSV file contains multiple commas within the 'memo' (transaction description) column. You can either manually patch your data before you run the tool or be aware that due to the work-around implemented we could potentially be losing valuable information beyond the comma.

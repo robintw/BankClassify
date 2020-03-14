@@ -26,14 +26,17 @@ class BankClassify():
          - filename: filename of Santander-format file
         """
         if bank == "santander":
-            print("adding santander data!")
+            print("adding Santander data!")
             self.new_data = self._read_santander_file(filename)
         elif bank == "nationwide":
-            print("adding nationwide data!")
+            print("adding Nationwide data!")
             self.new_data = self._read_nationwide_file(filename)
         elif bank == "lloyds":
             print("adding Lloyds Bank data!")
             self.new_data = self._read_lloyds_csv(filename)
+        elif bank == "barclays":
+            print("adding Barclays Bank data!")
+            self.new_data = self._read_barclays_csv(filename)
 
         self._ask_with_guess(self.new_data)
 
@@ -264,6 +267,35 @@ class BankClassify():
         df = df.astype({"desc": str, "date": str, "amount": float})
 
         return df
+
+    def _read_barclays_csv(self, filename):
+            """Read a file in the CSV format that Barclays Bank provides downloads in.
+            Edge case: foreign txn's sometimes causes more cols than it should 
+            Returns a pd.DataFrame with columns of 'date' 1 , 'desc' (memo)  5 and 'amount' 3 ."""
+
+            # Edge case: Barclays foreign transaction memo sometimes contains a comma, which is bad.
+            # Use a work-around to read only fixed col count
+            # https://stackoverflow.com/questions/20154303/pandas-read-csv-expects-wrong-number-of-columns-with-ragged-csv-file
+            # Prevents an error where some rows have more cols than they should
+            temp=pd.read_csv(filename,sep='^',header=None,prefix='X',skiprows=1)
+            temp2=temp.X0.str.split(',',expand=True)
+            del temp['X0']
+            df = pd.concat([temp,temp2],axis=1)
+
+            """Rename columns """
+            df.rename(
+                columns={
+                    1: 'date',
+                    5 : 'desc',
+                    3: 'amount'
+                    },
+                inplace=True
+            )
+
+            # cast types to columns for math 
+            df = df.astype({"desc": str, "date": str, "amount": float})
+
+            return df
 
 
     def _get_training(self, df):
