@@ -31,6 +31,9 @@ class BankClassify():
         elif bank == "nationwide":
             print("adding nationwide data!")
             self.new_data = self._read_nationwide_file(filename)
+        elif bank == "lloyds":
+            print("adding Lloyds Bank data!")
+            self.new_data = self._read_lloyds_csv(filename)
 
         self._ask_with_guess(self.new_data)
 
@@ -218,13 +221,50 @@ class BankClassify():
                 just_numbers = re.sub("[^0-9\.-]", "", data)
                 amounts.append(just_numbers.strip())
 
+
         df = pd.DataFrame({'date':dates, 'desc':descs, 'amount':amounts})
+
 
         df['amount'] = df.amount.astype(float)
         df['desc'] = df.desc.astype(str)
         df['date'] = df.date.astype(str)
 
         return df
+
+    def _read_lloyds_csv(self, filename):
+        """Read a file in the CSV format that Lloyds Bank provides downloads in.
+
+        Returns a pd.DataFrame with columns of 'date' 0 , 'desc'  4 and 'amount' 5 ."""
+
+        df = pd.read_csv(filename, skiprows=0)
+
+        """Rename columns """
+        #df.columns = ['date', 'desc', 'amount']
+        df.rename(
+            columns={
+                "Transaction Date" : 'date',
+                "Transaction Description" : 'desc',
+                "Debit Amount": 'amount',
+                "Credit Amount": 'creditAmount'
+            },
+            inplace=True
+        )
+
+        # if its income we still want it in the amount col!
+        # manually correct each using 2 cols to create 1 col with either + or - figure
+        # lloyds outputs 2 cols, credit and debit, we want 1 col representing a +- figure
+        for index, row in df.iterrows():
+            if (row['amount'] > 0):
+                print('send it negative')
+                df.at[index, 'amount'] = -row['amount']
+            elif (row['creditAmount'] > 0):
+                df.at[index, 'amount'] = row['creditAmount']
+
+        # cast types to columns for math 
+        df = df.astype({"desc": str, "date": str, "amount": float})
+
+        return df
+
 
     def _get_training(self, df):
         """Get training data for the classifier, consisting of tuples of
