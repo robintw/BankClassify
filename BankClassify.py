@@ -11,9 +11,13 @@ from tabulate import tabulate
 class BankClassify():
 
     def __init__(self, data="AllData.csv"):
-        """Load in the previous data (by default from AllData.csv) and initialise the classifier"""
+        """Load in the previous data (by default from `data`) and initialise the classifier"""
+
+        # allows dynamic training data to be used (i.e many accounts in a loop)
+        self.trainingDataFile = data
+
         if os.path.exists(data):
-            self.prev_data = pd.read_csv(data)
+            self.prev_data = pd.read_csv(self.trainingDataFile)
         else:
             self.prev_data = pd.DataFrame(columns=['date', 'desc', 'amount', 'cat'])
 
@@ -41,7 +45,8 @@ class BankClassify():
         self._ask_with_guess(self.new_data)
 
         self.prev_data = pd.concat([self.prev_data, self.new_data])
-        self.prev_data.to_csv("AllData.csv", index=False)
+        # save data to the same file we loaded earlier
+        self.prev_data.to_csv(self.trainingDataFile, index=False)
 
     def _prep_for_analysis(self):
         """Prepare data for analysis in pandas, setting index types and subsetting"""
