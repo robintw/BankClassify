@@ -41,6 +41,9 @@ class BankClassify():
         elif bank == "barclays":
             print("adding Barclays Bank data!")
             self.new_data = self._read_barclays_csv(filename)
+        elif bank == "mint":
+            print("adding Mint data!")
+            self.new_data = self._read_mint_csv(filename)
 
         self._ask_with_guess(self.new_data)
 
@@ -270,6 +273,35 @@ class BankClassify():
 
         # cast types to columns for math 
         df = df.astype({"desc": str, "date": str, "amount": float})
+
+        return df
+
+    def _read_mint_csv(self, filename) -> pd.DataFrame:
+        """Read a file in the CSV format that mint.intuit.com provides downloads in.
+
+        Returns a pd.DataFrame with columns of 'date', 'desc', and 'amount'."""
+
+        df = pd.read_csv(filename, skiprows=0)
+
+        """Rename columns """
+        # df.columns = ['date', 'desc', 'amount']
+        df.rename(
+            columns={
+                "Date": 'date',
+                "Original Description": 'desc',
+                "Amount": 'amount',
+                "Transaction Type": 'type'
+            },
+            inplace=True
+        )
+
+        # mint outputs 2 cols, amount and type, we want 1 col representing a +- figure
+        # manually correct amount based on transaction type colum with either + or - figure
+        df.loc[df['type'] == 'debit', 'amount'] = -df['amount']
+
+        # cast types to columns for math
+        df = df.astype({"desc": str, "date": str, "amount": float})
+        df = df[['date', 'desc', 'amount']]
 
         return df
 
