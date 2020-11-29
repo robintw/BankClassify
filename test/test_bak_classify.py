@@ -41,3 +41,12 @@ def test_debitIsNegative_creditIsPositive():
 
     assert (df_dut.loc[baseline, 'amount'] < 0).all()
     assert (df_dut.loc[~baseline, 'amount'] >= 0).all()
+
+
+def test_reload_trainingset():
+    bc = BankClassify(data='')
+    assert len(bc.classifier.train_set) == 0
+
+    dataset = pd.read_csv('test/test_training_set.csv')
+    bc.retrain_classifier(dataset)
+    assert len(bc.classifier.train_set) == 13

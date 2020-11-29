@@ -23,6 +23,14 @@ class BankClassify():
 
         self.classifier = NaiveBayesClassifier(self._get_training(self.prev_data), self._extractor)
 
+    def retrain_classifier(self, dataset=None):
+        if dataset is None:
+            self.prev_data = pd.DataFrame(columns=['date', 'desc', 'amount', 'cat'])
+        else:
+            self.prev_data = dataset
+
+        self.classifier = NaiveBayesClassifier(self._get_training(self.prev_data), self._extractor)
+
     def add_data(self, filename, bank="santander"):
         """Add new data and interactively classify it.
 

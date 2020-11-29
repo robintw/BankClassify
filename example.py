@@ -1,4 +1,6 @@
 from BankClassify import BankClassify
+# import nltk
+# nltk.download('punkt')
 
 bc = BankClassify()
 
