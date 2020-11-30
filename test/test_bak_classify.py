@@ -52,3 +52,17 @@ def test_reload_trainingset():
     dataset = pd.read_csv(f'{PWD}/test_training_set.csv')
     bc.retrain_classifier(dataset)
     assert len(bc.classifier.train_set) == 13
+
+
+def test_classify():
+    bc = BankClassify(data='')
+
+    df = pd.DataFrame()
+    df.loc['UID', 'desc'] = 'DESCRIPTION'
+
+    df = bc.classify(df)
+
+    print(df)
+
+    assert type(df) is pd.DataFrame
+    assert 'cat' in df.columns

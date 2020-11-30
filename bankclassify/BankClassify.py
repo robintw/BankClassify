@@ -33,7 +33,22 @@ class BankClassify():
         self.classifier = NaiveBayesClassifier(self._get_training(self.prev_data), self._extractor)
 
     def classify(self, data: pd.DataFrame):
-        pass
+        assert 'desc' in data.columns
+
+        data['cat'] = ''
+
+        for index, row in data.iterrows():
+            stripped_text = self._strip_numbers(row['desc'])
+
+            if len(self.classifier.train_set) > 1:
+                guess = self.classifier.classify(stripped_text)
+            else:
+                guess = ''
+
+            data.at[index, 'cat'] = guess
+            # self.classifier.update([(stripped_text, guess)])
+
+        return data
 
     def add_data(self, filename, bank="santander"):
         """Add new data and interactively classify it.
@@ -195,9 +210,9 @@ class BankClassify():
 
             # get spend/pay in amount
             if splits[3] != "":  # paid out
-                spend = float(re.sub("[^0-9\.-]", "", splits[3])) * -1
+                spend = float(re.sub(r"[^0-9\.-]", "", splits[3])) * -1
             else:  # paid in
-                spend = float(re.sub("[^0-9\.-]", "", splits[4]))
+                spend = float(re.sub(r"[^0-9\.-]", "", splits[4]))
 
             amounts.append(spend)
 
@@ -239,7 +254,7 @@ class BankClassify():
             elif category == 'Description':
                 descs.append(data.strip())
             elif category == 'Amount':
-                just_numbers = re.sub("[^0-9\.-]", "", data)
+                just_numbers = re.sub(r"[^0-9\.-]", "", data)
                 amounts.append(just_numbers.strip())
 
         df = pd.DataFrame({'date': dates, 'desc': descs, 'amount': amounts})
