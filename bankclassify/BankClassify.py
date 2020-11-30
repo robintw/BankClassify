@@ -8,6 +8,7 @@ from textblob.classifiers import NaiveBayesClassifier
 from colorama import init, Fore, Style
 from tabulate import tabulate
 
+
 class BankClassify():
 
     def __init__(self, data="AllData.csv"):
@@ -23,13 +24,16 @@ class BankClassify():
 
         self.classifier = NaiveBayesClassifier(self._get_training(self.prev_data), self._extractor)
 
-    def retrain_classifier(self, dataset=None):
+    def retrain_classifier(self, dataset: pd.DataFrame = None):
         if dataset is None:
             self.prev_data = pd.DataFrame(columns=['date', 'desc', 'amount', 'cat'])
         else:
             self.prev_data = dataset
 
         self.classifier = NaiveBayesClassifier(self._get_training(self.prev_data), self._extractor)
+
+    def classify(self, data: pd.DataFrame):
+        pass
 
     def add_data(self, filename, bank="santander"):
         """Add new data and interactively classify it.
@@ -114,14 +118,13 @@ class BankClassify():
             else:
                 guess = ""
 
-
             # Print list of categories
             print(chr(27) + "[2J")
             print(cats_table)
             print("\n\n")
             # Print transaction
             print("On: %s\t %.2f\n%s" % (row['date'], row['amount'], row['desc']))
-            print(Fore.RED  + Style.BRIGHT + "My guess is: " + str(guess) + Fore.RESET)
+            print(Fore.RED + Style.BRIGHT + "My guess is: " + str(guess) + Fore.RESET)
 
             input_value = input("> ")
 
@@ -149,13 +152,13 @@ class BankClassify():
                 # Write correct answer
                 df.at[index, 'cat'] = category
                 # Update classifier
-                self.classifier.update([(stripped_text, category)   ])
+                self.classifier.update([(stripped_text, category)])
 
         return df
 
     def _make_date_index(self, df):
         """Make the index of df a Datetime index"""
-        df.index = pd.DatetimeIndex(df.date.apply(dateutil.parser.parse,dayfirst=True))
+        df.index = pd.DatetimeIndex(df.date.apply(dateutil.parser.parse, dayfirst=True))
 
         return df
 
@@ -167,14 +170,13 @@ class BankClassify():
         with open(filename) as f:
            lines = f.readlines()
 
-
         dates = []
         descs = []
         amounts = []
 
         for line in lines[5:]:
 
-            line = "".join(i for i in line if ord(i)<128)
+            line = "".join(i for i in line if ord(i) < 128)
             if line.strip() == '':
                 continue
 
@@ -192,17 +194,17 @@ class BankClassify():
             dates.append(date)
 
             # get spend/pay in amount
-            if splits[3] != "": # paid out
+            if splits[3] != "":  # paid out
                 spend = float(re.sub("[^0-9\.-]", "", splits[3])) * -1
-            else: # paid in
+            else:  # paid in
                 spend = float(re.sub("[^0-9\.-]", "", splits[4]))
-            
+
             amounts.append(spend)
 
             #Description
             descs.append(splits[2])
 
-        df = pd.DataFrame({'date':dates, 'desc':descs, 'amount':amounts})
+        df = pd.DataFrame({'date': dates, 'desc': descs, 'amount': amounts})
 
         df['amount'] = df.amount.astype(float)
         df['desc'] = df.desc.astype(str)
@@ -223,7 +225,7 @@ class BankClassify():
 
         for line in lines[4:]:
 
-            line = "".join(i for i in line if ord(i)<128)
+            line = "".join(i for i in line if ord(i) < 128)
             if line.strip() == '':
                 continue
 
@@ -240,9 +242,7 @@ class BankClassify():
                 just_numbers = re.sub("[^0-9\.-]", "", data)
                 amounts.append(just_numbers.strip())
 
-
-        df = pd.DataFrame({'date':dates, 'desc':descs, 'amount':amounts})
-
+        df = pd.DataFrame({'date': dates, 'desc': descs, 'amount': amounts})
 
         df['amount'] = df.amount.astype(float)
         df['desc'] = df.desc.astype(str)
@@ -261,8 +261,8 @@ class BankClassify():
         #df.columns = ['date', 'desc', 'amount']
         df.rename(
             columns={
-                "Transaction Date" : 'date',
-                "Transaction Description" : 'desc',
+                "Transaction Date": 'date',
+                "Transaction Description": 'desc',
                 "Debit Amount": 'amount',
                 "Credit Amount": 'creditAmount'
             },
@@ -279,7 +279,7 @@ class BankClassify():
             elif (row['creditAmount'] > 0):
                 df.at[index, 'amount'] = row['creditAmount']
 
-        # cast types to columns for math 
+        # cast types to columns for math
         df = df.astype({"desc": str, "date": str, "amount": float})
 
         return df
@@ -314,34 +314,33 @@ class BankClassify():
         return df
 
     def _read_barclays_csv(self, filename):
-            """Read a file in the CSV format that Barclays Bank provides downloads in.
+        """Read a file in the CSV format that Barclays Bank provides downloads in.
             Edge case: foreign txn's sometimes causes more cols than it should 
             Returns a pd.DataFrame with columns of 'date' 1 , 'desc' (memo)  5 and 'amount' 3 ."""
 
-            # Edge case: Barclays foreign transaction memo sometimes contains a comma, which is bad.
-            # Use a work-around to read only fixed col count
-            # https://stackoverflow.com/questions/20154303/pandas-read-csv-expects-wrong-number-of-columns-with-ragged-csv-file
-            # Prevents an error where some rows have more cols than they should
-            temp=pd.read_csv(filename,sep='^',header=None,prefix='X',skiprows=1)
-            temp2=temp.X0.str.split(',',expand=True)
-            del temp['X0']
-            df = pd.concat([temp,temp2],axis=1)
+        # Edge case: Barclays foreign transaction memo sometimes contains a comma, which is bad.
+        # Use a work-around to read only fixed col count
+        # https://stackoverflow.com/questions/20154303/pandas-read-csv-expects-wrong-number-of-columns-with-ragged-csv-file
+        # Prevents an error where some rows have more cols than they should
+        temp = pd.read_csv(filename, sep='^', header=None, prefix='X', skiprows=1)
+        temp2 = temp.X0.str.split(',', expand=True)
+        del temp['X0']
+        df = pd.concat([temp, temp2], axis=1)
 
-            """Rename columns """
-            df.rename(
-                columns={
-                    1: 'date',
-                    5 : 'desc',
-                    3: 'amount'
-                    },
-                inplace=True
-            )
+        """Rename columns """
+        df.rename(
+            columns={
+                1: 'date',
+                5: 'desc',
+                3: 'amount'
+            },
+            inplace=True
+        )
 
-            # cast types to columns for math 
-            df = df.astype({"desc": str, "date": str, "amount": float})
+        # cast types to columns for math
+        df = df.astype({"desc": str, "date": str, "amount": float})
 
-            return df
-
+        return df
 
     def _get_training(self, df):
         """Get training data for the classifier, consisting of tuples of
@@ -351,7 +350,7 @@ class BankClassify():
         for i in subset.index:
             row = subset.iloc[i]
             new_desc = self._strip_numbers(row['desc'])
-            train.append( (new_desc, row['cat']) )
+            train.append((new_desc, row['cat']))
 
         return train
 

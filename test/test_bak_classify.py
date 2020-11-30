@@ -1,6 +1,8 @@
+from pathlib import Path
+from bankclassify.BankClassify import BankClassify
 import pandas as pd
-from BankClassify import BankClassify
 
+PWD = Path(__file__).resolve().parent
 
 def test_mintReader_returns_date_description_ammount():
     bc = BankClassify()
@@ -47,6 +49,6 @@ def test_reload_trainingset():
     bc = BankClassify(data='')
     assert len(bc.classifier.train_set) == 0
 
-    dataset = pd.read_csv('test/test_training_set.csv')
+    dataset = pd.read_csv(f'{PWD}/test_training_set.csv')
     bc.retrain_classifier(dataset)
     assert len(bc.classifier.train_set) == 13
