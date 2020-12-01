@@ -1,6 +1,5 @@
 import re
 from typing import List
-from src.record import Record
 import dateutil
 import os
 from datetime import datetime
@@ -33,13 +32,6 @@ class BankClassify():
             self.prev_data = dataset
 
         self.classifier = NaiveBayesClassifier(self._get_training(self.prev_data), self._extractor)
-
-    def classify(self, data: List[Record]):
-        for r in data:
-            stripped_text = self._strip_numbers(r.extended_description)
-
-            if len(self.classifier.train_set) > 1:
-                data.description = self.classifier.classify(stripped_text)
 
     def add_data(self, filename, bank="santander"):
         """Add new data and interactively classify it.
@@ -174,7 +166,7 @@ class BankClassify():
         Returns a pd.DataFrame with columns of 'date', 'desc' and 'amount'."""
 
         with open(filename) as f:
-           lines = f.readlines()
+            lines = f.readlines()
 
         dates = []
         descs = []
@@ -207,7 +199,7 @@ class BankClassify():
 
             amounts.append(spend)
 
-            #Description
+            # Description
             descs.append(splits[2])
 
         df = pd.DataFrame({'date': dates, 'desc': descs, 'amount': amounts})
