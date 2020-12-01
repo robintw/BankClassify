@@ -1,4 +1,6 @@
 import re
+from typing import List
+from src.record import Record
 import dateutil
 import os
 from datetime import datetime
@@ -32,23 +34,12 @@ class BankClassify():
 
         self.classifier = NaiveBayesClassifier(self._get_training(self.prev_data), self._extractor)
 
-    def classify(self, data: pd.DataFrame):
-        assert 'desc' in data.columns
-
-        data['cat'] = ''
-
-        for index, row in data.iterrows():
-            stripped_text = self._strip_numbers(row['desc'])
+    def classify(self, data: List[Record]):
+        for r in data:
+            stripped_text = self._strip_numbers(r.extended_description)
 
             if len(self.classifier.train_set) > 1:
-                guess = self.classifier.classify(stripped_text)
-            else:
-                guess = ''
-
-            data.at[index, 'cat'] = guess
-            # self.classifier.update([(stripped_text, guess)])
-
-        return data
+                data.description = self.classifier.classify(stripped_text)
 
     def add_data(self, filename, bank="santander"):
         """Add new data and interactively classify it.
