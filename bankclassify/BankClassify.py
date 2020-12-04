@@ -369,7 +369,7 @@ class BankClassify():
 
     def _strip_numbers(self, s):
         """Strip numbers from the given string"""
-        return re.sub("[^A-Z ]", "", s)
+        return re.sub("[^A-Za-z ]", "", s)
 
     def _split_by_multiple_delims(self, string, delims):
         """Split the given string by the list of delimiters given"""
