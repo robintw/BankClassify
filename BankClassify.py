@@ -44,6 +44,16 @@ class BankClassify():
         elif bank == "mint":
             print("adding Mint data!")
             self.new_data = self._read_mint_csv(filename)
+        elif bank == "natwest":
+            print("adding Natwest Bank data!")
+            self.new_data = self._read_natwest_csv(filename)
+        elif bank == "amex":
+            print("adding Amex Bank data!")
+            self.new_data = self._read_amex_csv(filename)
+        else:
+            raise ValueError('new_data appears empty! probably tried an unknown bank: ' + bank)
+
+
 
         self._ask_with_guess(self.new_data)
 
@@ -276,35 +286,6 @@ class BankClassify():
 
         return df
 
-    def _read_mint_csv(self, filename) -> pd.DataFrame:
-        """Read a file in the CSV format that mint.intuit.com provides downloads in.
-
-        Returns a pd.DataFrame with columns of 'date', 'desc', and 'amount'."""
-
-        df = pd.read_csv(filename, skiprows=0)
-
-        """Rename columns """
-        # df.columns = ['date', 'desc', 'amount']
-        df.rename(
-            columns={
-                "Date": 'date',
-                "Original Description": 'desc',
-                "Amount": 'amount',
-                "Transaction Type": 'type'
-            },
-            inplace=True
-        )
-
-        # mint outputs 2 cols, amount and type, we want 1 col representing a +- figure
-        # manually correct amount based on transaction type colum with either + or - figure
-        df.loc[df['type'] == 'debit', 'amount'] = -df['amount']
-
-        # cast types to columns for math
-        df = df.astype({"desc": str, "date": str, "amount": float})
-        df = df[['date', 'desc', 'amount']]
-
-        return df
-
     def _read_barclays_csv(self, filename):
             """Read a file in the CSV format that Barclays Bank provides downloads in.
             Edge case: foreign txn's sometimes causes more cols than it should 
@@ -334,6 +315,86 @@ class BankClassify():
 
             return df
 
+    def _read_mint_csv(self, filename) -> pd.DataFrame:
+        """Read a file in the CSV format that mint.intuit.com provides downloads in.
+
+        Returns a pd.DataFrame with columns of 'date', 'desc', and 'amount'."""
+
+        df = pd.read_csv(filename, skiprows=0)
+
+        """Rename columns """
+        # df.columns = ['date', 'desc', 'amount']
+        df.rename(
+            columns={
+                "Date": 'date',
+                "Original Description": 'desc',
+                "Amount": 'amount',
+                "Transaction Type": 'type'
+            },
+            inplace=True
+        )
+
+        # mint outputs 2 cols, amount and type, we want 1 col representing a +- figure
+        # manually correct amount based on transaction type colum with either + or - figure
+        df.loc[df['type'] == 'debit', 'amount'] = -df['amount']
+
+        # cast types to columns for math
+        df = df.astype({"desc": str, "date": str, "amount": float})
+        df = df[['date', 'desc', 'amount']]
+
+        return df
+
+    def _read_natwest_csv(self, filename):
+            """Read a file in the CSV format that Natwest Bank provides downloads in.
+            Returns a pd.DataFrame with columns of 'date' 0 , 'desc'  2 and 'amount' 3 .
+            Date, Type, Desc, Value (- or unsigned positive integer), Balance, Account Name, Account Number..
+            """
+
+            temp=pd.read_csv(filename,sep='^',header=None,prefix='X',skiprows=1)
+            temp2=temp.X0.str.split(',',expand=True)
+            del temp['X0']
+            df = pd.concat([temp,temp2],axis=1)
+
+            """Rename columns """
+            df.rename(
+                columns={
+                    0: 'date',
+                    2 : 'desc',
+                    3: 'amount'
+                    },
+                inplace=True
+            )
+
+            # cast types to columns for math 
+            df = df.astype({"desc": str, "date": str, "amount": float})
+
+            return df
+    
+    def _read_amex_csv(self, filename):
+                """Read a file in the CSV format that AMEX (American Express) provides downloads in.
+                Returns a pd.DataFrame with columns of 'date' 0 , 'desc'  1 and 'amount' 4 .
+                Date, Desc, Account Name, Account Number,  Amount (- or unsigned positive integer)
+                """
+
+                temp=pd.read_csv(filename,sep='^',header=None,prefix='X',skiprows=1)
+                temp2=temp.X0.str.split(',',expand=True)
+                del temp['X0']
+                df = pd.concat([temp,temp2],axis=1)
+
+                """Rename columns """
+                df.rename(
+                    columns={
+                        0: 'date',
+                        1 : 'desc',
+                        4: 'amount'
+                        },
+                    inplace=True
+                )
+
+                # cast types to columns for math 
+                df = df.astype({"desc": str, "date": str, "amount": float})
+
+                return df
 
     def _get_training(self, df):
         """Get training data for the classifier, consisting of tuples of
