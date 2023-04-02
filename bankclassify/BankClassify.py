@@ -1,6 +1,5 @@
 import re
 from typing import List
-import dateutil
 import os
 from datetime import datetime
 
@@ -54,6 +53,9 @@ class BankClassify():
         elif bank == "mint":
             print("adding Mint data!")
             self.new_data = self._read_mint_csv(filename)
+        elif bank == "personal_capital":
+            print("adding personal capital data!")
+            self.new_data = self._read_pc_csv(filename)
 
         self._ask_with_guess(self.new_data)
 
@@ -311,6 +313,32 @@ class BankClassify():
 
         return df
 
+    def _read_pc_csv(self, filename) -> pd.DataFrame:
+        """Read a file in the CSV format that mint.intuit.com provides downloads in.
+
+        Returns a pd.DataFrame with columns of 'date', 'desc', and 'amount'."""
+
+        df = pd.read_csv(filename, skiprows=0)
+
+        """Rename columns """
+        # df.columns = ['date', 'desc', 'amount']
+        df.rename(
+            columns={
+                "Date": 'date',
+                "Description": 'desc',
+                "Amount": 'amount',
+            },
+            inplace=True
+        )
+
+        # cast types to columns for math
+        df = df.astype({"desc": str, "date": str, "amount": float})
+        df['cat'] = ""
+        df = df.reindex(columns=['date', 'Account', 'desc', 'cat', 'Group', 'Category', 'Notes', 'amount']).fillna("")
+
+
+        return df
+    
     def _read_barclays_csv(self, filename):
         """Read a file in the CSV format that Barclays Bank provides downloads in.
             Edge case: foreign txn's sometimes causes more cols than it should 

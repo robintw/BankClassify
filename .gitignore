@@ -106,3 +106,5 @@ training_set.json
 ws.code-workspace
 transactions.csv
 .vscode/settings.json
+*.csv
+python_env

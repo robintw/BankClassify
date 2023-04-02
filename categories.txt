@@ -1,19 +1,45 @@
-Income
-Bill - General
-Bill - Utilities
-Bill - Communications
-Travel - General
-Travel - Car
-Travel - Petrol
-Supermarket
-Cash Out
-Eating Out
-House
-Books
-Craft
-Charity Shop       
-Presents
-Toiletries
-Mortgage
-Paypal
-Unclassified
+Non-essential:Shopping
+Non-essential:Entertainment
+Critical:Groceries
+Critical:Debt
+Critical:Home-Insurance
+Critical:Home-Mortgage
+Critical:Home-Property Taxes
+Critical:Kids-Daycare
+Critical:Taxes
+Critical:Utilities-Cellphone Bill
+Critical:Utilities-Electricity Bill
+Critical:Utilities-Garbage Bill
+Critical:Utilities-Gas Bill
+Critical:Utilities-Internet Bill
+Critical:Utilities-Water Bill
+Critical:Car-Insurance
+Critical:Car-Loan
+Critical:Car-Gas & Fuel
+Essential:Medical
+Essential:Veterinarian
+Essential:Saving
+Essential:Public Transportation
+Essential:Car-Maintenance
+Income:Income-Alex paycheck
+Income:Income-Anna paycheck
+Income:Income-Other
+Non-essential:Cash & ATM
+Non-essential:Fees & Charges
+Non-essential:Gifts
+Non-essential:Subscriptions
+Non-essential:Personal Spending-Alex
+Non-essential:Personal Spending-Anna
+Non-essential:Travel
+Exceptions:Not-clear
+Exceptions:Credit Card Payment
+Exceptions:Reimbursable
+Exceptions:Transfer
+Exceptions:Uncommon Expense
+Business:General
+Business:Gardening
+Business:Rental
+Business:Rental-Insurance
+Business:Winemaking
+Business:Winemaking Grapes
+Business:Winemaking Supplies
